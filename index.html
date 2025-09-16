@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -56,144 +56,190 @@
             color: var(--accent-text);
         }
         .btn-primary:hover { filter: brightness(0.9); }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); }
     </style>
 </head>
 <body class="main-container">
 
-    <div id="app" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
-        <header class="mb-8">
-            <div class="flex justify-between items-center">
-                <h1 class="text-3xl sm:text-4xl font-bold header-title">Калькулятор рулонов</h1>
-                <label for="theme-toggle-input" title="Переключить тему" class="relative w-16 h-8 flex items-center bg-sky-200 dark:bg-zinc-700 rounded-full cursor-pointer p-1 transition-colors duration-300">
-                    <input type="checkbox" id="theme-toggle-input" class="sr-only peer">
-                    <span class="w-6 h-6 bg-yellow-400 dark:bg-slate-300 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center peer-checked:translate-x-8">
-                        <svg class="h-4 w-4 text-white block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-15.66l-.707.707M4.04 19.96l-.707.707M21 12h-1M4 12H3m16.96-7.96l-.707-.707M4.04 4.04l-.707-.707M12 12a2 2 0 100-4 2 2 0 000 4z" /></svg>
-                        <svg class="h-4 w-4 text-zinc-800 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                    </span>
-                </label>
-            </div>
-        </header>
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="card p-6 sm:p-8 rounded-2xl w-full max-w-md">
+            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-6 header-title">Вход в калькулятор</h2>
+            <form id="auth-form">
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium form-label mb-1">Email</label>
+                    <input type="email" id="email" required class="form-input w-full px-4 py-2 border rounded-lg transition" value="lequangduc19865@gmail.com">
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium form-label mb-1">Пароль</label>
+                    <input type="password" id="password" required class="form-input w-full px-4 py-2 border rounded-lg transition">
+                </div>
+                <button id="auth-button" type="submit" class="btn-primary w-full font-semibold py-2.5 px-4 rounded-lg transition duration-300">Войти</button>
+            </form>
+            <p id="auth-message" class="text-center mt-4 text-sm text-red-500"></p>
+        </div>
+    </div>
 
-        <div class="card p-6 sm:p-8 rounded-2xl">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                
-                <!-- Input Parameters Column -->
-                <div class="space-y-4">
-                    <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Входные данные</h2>
-                    
-                    <div>
-                        <label for="roll-width" class="block text-sm font-medium form-label mb-1">Ширина рулона, мм</label>
-                        <input type="number" id="roll-width" value="330" class="form-input w-full px-4 py-2 border rounded-lg transition">
+    <!-- Main App Screen (hidden by default) -->
+    <div id="app-screen" class="hidden">
+        <div id="app" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+            <header class="mb-8">
+                <div class="flex justify-between items-center flex-wrap gap-4">
+                    <div class="order-2 sm:order-1">
+                         <h1 class="text-3xl sm:text-4xl font-bold header-title">Калькулятор рулонов</h1>
+                         <div class="mt-2">
+                             <p id="user-email" class="text-sm font-medium header-title"></p>
+                             <button id="logout-btn" class="text-sm text-red-500 hover:underline">Выйти</button>
+                         </div>
                     </div>
-                    
-                    <div>
-                        <label for="label-width" class="block text-sm font-medium form-label mb-1">Ширина этикетки, мм</label>
-                        <input type="number" id="label-width" value="58" class="form-input w-full px-4 py-2 border rounded-lg transition">
-                    </div>
-
-                    <div>
-                        <label for="label-height" class="block text-sm font-medium form-label mb-1">Высота этикетки, мм</label>
-                        <input type="number" id="label-height" value="40" class="form-input w-full px-4 py-2 border rounded-lg transition">
-                    </div>
-
-                    <div>
-                        <label for="material" class="block text-sm font-medium form-label mb-1">Материал</label>
-                        <select id="material" class="form-select w-full px-4 py-2 border rounded-lg transition">
-                            <option value="semiglossPaper">Бумажная полуглянцевая</option>
-                            <option value="whitePolymer">Белая полимерная</option>
-                            <option value="crystalClear">Прозрачный хрусталь</option>
-                            <option value="imperialBlue">Императорский синий</option>
-                            <option value="imperialRed">Императорский красный</option>
-                            <option value="imperialGold">Императорское золото</option>
-                            <option value="imperialSilver">Императорское серебро</option>
-                            <option value="glossySilver">Глянцевое серебро</option>
-                            <option value="holographicSilver">Голографическое серебро</option>
-                            <option value="sugarClear">Прозрачный сахар</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="core-size" class="block text-sm font-medium form-label mb-1">Втулка (внутренний диаметр)</label>
-                        <select id="core-size" class="form-select w-full px-4 py-2 border rounded-lg transition">
-                            <option value="40">40 мм</option>
-                            <option value="76" selected>76 мм</option>
-                        </select>
+                    <div class="flex items-center gap-4 order-1 sm:order-2 ml-auto">
+                        <button id="manage-materials-btn" class="btn-primary text-sm font-semibold px-4 py-2 rounded-lg transition hidden">
+                            Управлять материалами
+                        </button>
+                        <label for="theme-toggle-input" title="Переключить тему" class="relative w-16 h-8 flex items-center bg-sky-200 dark:bg-zinc-700 rounded-full cursor-pointer p-1 transition-colors duration-300">
+                            <input type="checkbox" id="theme-toggle-input" class="sr-only peer">
+                            <span class="w-6 h-6 bg-yellow-400 dark:bg-slate-300 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center peer-checked:translate-x-8">
+                                <svg class="h-4 w-4 text-white block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-15.66l-.707.707M4.04 19.96l-.707.707M21 12h-1M4 12H3m16.96-7.96l-.707-.707M4.04 4.04l-.707-.707M12 12a2 2 0 100-4 2 2 0 000 4z" /></svg>
+                                <svg class="h-4 w-4 text-zinc-800 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                            </span>
+                        </label>
                     </div>
                 </div>
+            </header>
 
-                <!-- Calculated Results Column -->
-                <div class="space-y-4">
-                     <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Результаты</h2>
-                     <p class="text-sm form-label -mt-2">Измените любое из трех полей ниже, чтобы пересчитать остальные.</p>
-                    
-                     <div>
-                        <label for="labels-count" class="block text-sm font-medium form-label mb-1">Количество этикеток в рулоне, шт.</label>
-                        <input type="number" id="labels-count" value="1000" class="form-input w-full px-4 py-2 border rounded-lg transition">
+            <div class="card p-6 sm:p-8 rounded-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div class="space-y-4">
+                        <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Входные данные</h2>
+                        <div>
+                            <label for="roll-width" class="block text-sm font-medium form-label mb-1">Ширина рулона, мм</label>
+                            <input type="number" id="roll-width" value="330" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="label-width" class="block text-sm font-medium form-label mb-1">Ширина этикетки, мм</label>
+                            <input type="number" id="label-width" value="58" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="label-height" class="block text-sm font-medium form-label mb-1">Высота этикетки, мм</label>
+                            <input type="number" id="label-height" value="40" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="material" class="block text-sm font-medium form-label mb-1">Материал</label>
+                            <select id="material" class="form-select w-full px-4 py-2 border rounded-lg transition">
+                                <option value="">Загрузка материалов...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="core-size" class="block text-sm font-medium form-label mb-1">Втулка (внутренний диаметр)</label>
+                            <select id="core-size" class="form-select w-full px-4 py-2 border rounded-lg transition">
+                                <option value="40">40 мм</option>
+                                <option value="76" selected>76 мм</option>
+                            </select>
+                        </div>
                     </div>
-
-                    <div>
-                        <label for="roll-length" class="block text-sm font-medium form-label mb-1">Длина намотки, м</label>
-                        <input type="number" id="roll-length" class="form-input w-full px-4 py-2 border rounded-lg transition">
-                    </div>
-
-                    <div>
-                        <label for="roll-diameter" class="block text-sm font-medium form-label mb-1">Диаметр готового рулона, мм</label>
-                        <input type="number" id="roll-diameter" class="form-input w-full px-4 py-2 border rounded-lg transition">
-                    </div>
-                    
-                    <div>
-                        <label for="usable-width" class="block text-sm font-medium form-label mb-1">Рабочая ширина для раскладки, мм</label>
-                        <input type="text" id="usable-width" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
-                    </div>
-
-                    <div>
-                        <label for="streams-count" class="block text-sm font-medium form-label mb-1">Количество ручьев на рабочей ширине</label>
-                        <input type="text" id="streams-count" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
-                    </div>
-
-                    <div>
-                        <label for="roll-weight" class="block text-sm font-medium form-label mb-1">Примерный вес рулона, кг</label>
-                        <input type="text" id="roll-weight" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                    <div class="space-y-4">
+                         <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Результаты</h2>
+                         <p class="text-sm form-label -mt-2">Измените любое из трех полей ниже, чтобы пересчитать остальные.</p>
+                         <div>
+                            <label for="labels-count" class="block text-sm font-medium form-label mb-1">Количество этикеток в рулоне, шт.</label>
+                            <input type="number" id="labels-count" value="1000" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="roll-length" class="block text-sm font-medium form-label mb-1">Длина намотки, м</label>
+                            <input type="number" id="roll-length" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="roll-diameter" class="block text-sm font-medium form-label mb-1">Диаметр готового рулона, мм</label>
+                            <input type="number" id="roll-diameter" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
+                            <label for="usable-width" class="block text-sm font-medium form-label mb-1">Рабочая ширина для раскладки, мм</label>
+                            <input type="text" id="usable-width" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label for="streams-count" class="block text-sm font-medium form-label mb-1">Количество ручьев на рабочей ширине</label>
+                            <input type="text" id="streams-count" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label for="roll-weight" class="block text-sm font-medium form-label mb-1">Примерный вес рулона, кг</label>
+                            <input type="text" id="roll-weight" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+
+    <!-- Materials Management Modal -->
+    <div id="materials-modal" class="fixed inset-0 z-50 items-center justify-center hidden p-4">
+        <div id="modal-backdrop" class="modal-backdrop fixed inset-0"></div>
+        <div class="card p-6 rounded-2xl w-full max-w-2xl m-4 relative flex flex-col" style="max-height: 90vh;">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-border-color">
+                <h3 class="text-lg sm:text-xl font-semibold header-title">Справочник материалов</h3>
+                <button id="close-materials-modal" class="text-2xl text-secondary hover:text-primary">&times;</button>
+            </div>
+            <div id="materials-list-container" class="overflow-y-auto space-y-3 mb-6"></div>
+            <div class="mt-auto pt-4 border-t border-border-color">
+                <h4 class="text-md font-semibold mb-3 header-title">Добавить новый материал</h4>
+                <form id="add-material-form" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                    <div class="sm:col-span-2">
+                        <label for="new-material-name" class="block text-xs font-medium form-label mb-1">Название</label>
+                        <input type="text" id="new-material-name" required placeholder="Напр., Бумажная полуглянцевая" class="form-input w-full px-3 py-2 border rounded-lg text-sm transition">
+                    </div>
+                    <div>
+                        <label for="new-material-thickness" class="block text-xs font-medium form-label mb-1">Толщина, мкм</label>
+                        <input type="number" id="new-material-thickness" required placeholder="136" class="form-input w-full px-3 py-2 border rounded-lg text-sm transition">
+                    </div>
+                    <div>
+                        <label for="new-material-density" class="block text-xs font-medium form-label mb-1">Плотность, г/м²</label>
+                        <input type="number" id="new-material-density" required placeholder="152" class="form-input w-full px-3 py-2 border rounded-lg text-sm transition">
+                    </div>
+                    <button type="submit" class="btn-primary sm:col-span-4 w-full font-semibold py-2 px-4 rounded-lg transition duration-300">
+                        Добавить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
     <script type="module">
-        // --- КОНСТАНТЫ ---
-        // Здесь вы можете добавить свои материалы и их параметры
-        // thickness: общая толщина материала с подложкой в микронах (мкм)
-        // density: плотность материала в граммах на квадратный метр (г/м^2)
-        const MATERIALS = {
-            'semiglossPaper': { thickness: 136, density: 152 },
-            'whitePolymer': { thickness: 127, density: 119 },
-            'crystalClear': { thickness: 95, density: 108 },
-            'imperialBlue': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
-            'imperialRed': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
-            'imperialGold': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
-            'imperialSilver': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
-            'glossySilver': { thickness: 105, density: 126 },
-            'holographicSilver': { thickness: 125, density: 130 }, // Плотность-заглушка, уточните значение
-            'sugarClear': { thickness: 155, density: 145 }, // Плотность-заглушка, уточните значение
+        const firebaseConfig = {
+          apiKey: "AIzaSyA2RhpbrMryEF2-lsHSDkkXA42q3JzK-xw",
+          authDomain: "kachestvo-vozduha.firebaseapp.com",
+          projectId: "kachestvo-vozduha",
+          storageBucket: "kachestvo-vozduha.appspot.com",
+          messagingSenderId: "379571445431",
+          appId: "1:379571445431:web:d41e2477feac5c29e97732",
+          measurementId: "G-7EYBRBV2JN"
         };
+        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Параметры втулок
-        // innerDiameter: внутренний диаметр в мм
-        // outerDiameter: ВНЕШНИЙ диаметр в мм.
-        // weightPerMmKg: вес втулки в кг на 1 мм ширины. (1.54кг / 1000мм = 0.00154)
+        // --- Глобальные переменные и константы ---
+        let db, auth;
+        let materialsCollectionRef;
+        let liveMaterials = {};
+        let unsubscribeMaterials = null;
+        const ADMIN_EMAIL = "lequangduc19865@gmail.com";
         const CORES = {
-            '40': { innerDiameter: 40, outerDiameter: 44, weightPerMmKg: 0.00015 }, // 0.15 кг / 1000 мм
-            '76': { innerDiameter: 76, outerDiameter: 92, weightPerMmKg: 0.00154 }, // 1.54 кг / 1000 мм
+            '40': { innerDiameter: 40, outerDiameter: 44, weightPerMmKg: 0.00015 },
+            '76': { innerDiameter: 76, outerDiameter: 92, weightPerMmKg: 0.00154 },
         };
+        const GAP_VERTICAL_MM = 10, GAP_HORIZONTAL_MM = 4, EDGE_TRIM_MM = 12, MAX_PRINT_WIDTH_MM = 320;
 
-        const GAP_VERTICAL_MM = 10; // Зазор между этикетками по вертикали в мм
-        const GAP_HORIZONTAL_MM = 4; // Зазор между этикетками по горизонтали в мм
-        const EDGE_TRIM_MM = 12; // Отступ от края печатной области
-        const MAX_PRINT_WIDTH_MM = 320; // Максимальное поле печати
-
-        // --- Получение элементов DOM ---
+        // --- Элементы DOM ---
         const ui = {
+            authScreen: document.getElementById('auth-screen'),
+            appScreen: document.getElementById('app-screen'),
+            authForm: document.getElementById('auth-form'),
+            authMessage: document.getElementById('auth-message'),
+            logoutBtn: document.getElementById('logout-btn'),
+            userEmail: document.getElementById('user-email'),
+            manageMaterialsBtn: document.getElementById('manage-materials-btn'),
             rollWidth: document.getElementById('roll-width'),
             labelWidth: document.getElementById('label-width'),
             labelHeight: document.getElementById('label-height'),
@@ -205,162 +251,287 @@
             rollWeight: document.getElementById('roll-weight'),
             streamsCount: document.getElementById('streams-count'),
             usableWidth: document.getElementById('usable-width'),
+            materialsModal: document.getElementById('materials-modal'),
+            closeMaterialsModalBtn: document.getElementById('close-materials-modal'),
+            modalBackdrop: document.getElementById('modal-backdrop'),
+            materialsListContainer: document.getElementById('materials-list-container'),
+            addMaterialForm: document.getElementById('add-material-form'),
         };
 
-        // --- ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА ---
+        // --- Основные функции ---
         function calculate(source) {
-            // 1. Собираем все базовые параметры
             const rollWidthMm = parseFloat(ui.rollWidth.value) || 0;
             const labelWidthMm = parseFloat(ui.labelWidth.value) || 0;
             const labelHeightMm = parseFloat(ui.labelHeight.value) || 0;
+            const selectedMaterialKey = ui.material.value;
+            const selectedMaterial = liveMaterials[selectedMaterialKey];
             
-            const selectedMaterial = MATERIALS[ui.material.value];
-            const materialThicknessMm = selectedMaterial.thickness / 1000; // мкм -> мм
+            if (!selectedMaterial) return;
+
+            const materialThicknessMm = selectedMaterial.thickness / 1000;
             const materialDensityGsm = selectedMaterial.density;
-            
             const selectedCore = CORES[ui.coreSize.value];
             const coreOuterDiameterMm = selectedCore.outerDiameter;
             const coreWeightPerMmKg = selectedCore.weightPerMmKg;
 
+            if (materialThicknessMm === 0) return;
 
-            if (materialThicknessMm === 0) return; // Предотвращение деления на ноль
-
-            // Расчет рабочей ширины
             const printableWidthMm = Math.min(rollWidthMm, MAX_PRINT_WIDTH_MM);
             const usableWidthMm = printableWidthMm - EDGE_TRIM_MM;
-
-            // 2. В зависимости от того, какое поле было изменено, вычисляем остальные
-            let labels = parseFloat(ui.labelsCount.value) || 0;
-            let lengthM = parseFloat(ui.rollLength.value) || 0;
-            let diameterMm = parseFloat(ui.rollDiameter.value) || 0;
+            let labels = parseFloat(ui.labelsCount.value) || 0, lengthM = parseFloat(ui.rollLength.value) || 0, diameterMm = parseFloat(ui.rollDiameter.value) || 0;
 
             if (source === 'labels-count') {
-                // Длина (м) = Кол-во этикеток * (Высота этикетки + зазор) / 1000
                 lengthM = labels * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
-                
-                // Расчет диаметра по длине
                 const coreRadiusMm = coreOuterDiameterMm / 2;
                 const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
                 const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
                 diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
-                
             } else if (source === 'roll-length') {
-                // Кол-во этикеток = Длина (м) * 1000 / (Высота этикетки + зазор)
                 labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
-                
-                // Расчет диаметра по длине (такой же, как выше)
                 const coreRadiusMm = coreOuterDiameterMm / 2;
                 const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
                 const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
                 diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
-
             } else if (source === 'roll-diameter') {
-                // Расчет длины по диаметру
                 const rollRadiusMm = diameterMm / 2;
                 const coreRadiusMm = coreOuterDiameterMm / 2;
                 const materialAreaMm2 = Math.PI * (Math.pow(rollRadiusMm, 2) - Math.pow(coreRadiusMm, 2));
                 lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
-                
-                // Расчет кол-ва этикеток по длине (такой же, как выше)
                 labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
             }
 
-            // 3. Расчет количества ручьев
-            const streams = (labelWidthMm > 0 && (labelWidthMm + GAP_HORIZONTAL_MM > 0)) 
-                ? Math.floor(usableWidthMm / (labelWidthMm + GAP_HORIZONTAL_MM)) 
-                : 0;
-
-            // 4. Расчет веса (всегда в конце)
+            const streams = (labelWidthMm > 0 && (labelWidthMm + GAP_HORIZONTAL_MM > 0)) ? Math.floor(usableWidthMm / (labelWidthMm + GAP_HORIZONTAL_MM)) : 0;
             const materialAreaM2 = lengthM * (rollWidthMm / 1000);
             const materialWeightKg = materialAreaM2 * materialDensityGsm / 1000;
             const coreWeightKg = coreWeightPerMmKg * rollWidthMm;
             const weightKg = materialWeightKg + coreWeightKg;
             
-            // 5. Обновление полей интерфейса
             updateUI(source, { labels, lengthM, diameterMm, weightKg, streams, usableWidthMm });
         }
 
-        // --- Функция обновления UI ---
         function updateUI(source, values) {
-            if (source !== 'labels-count') {
-                ui.labelsCount.value = Math.round(values.labels);
-            }
-            if (source !== 'roll-length') {
-                ui.rollLength.value = values.lengthM.toFixed(2);
-            }
-            if (source !== 'roll-diameter') {
-                ui.rollDiameter.value = values.diameterMm.toFixed(1);
-            }
+            if (source !== 'labels-count') ui.labelsCount.value = Math.round(values.labels);
+            if (source !== 'roll-length') ui.rollLength.value = values.lengthM.toFixed(2);
+            if (source !== 'roll-diameter') ui.rollDiameter.value = values.diameterMm.toFixed(1);
             ui.rollWeight.value = values.weightKg.toFixed(3);
             ui.streamsCount.value = values.streams;
             ui.usableWidth.value = values.usableWidthMm.toFixed(1);
         }
-        
-        // --- Установка слушателей событий ---
-        const inputsToListen = [
-            ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
-            ui.labelsCount, ui.rollLength, ui.rollDiameter
-        ];
 
-        inputsToListen.forEach(input => {
-            input.addEventListener('input', () => {
-                let source = input.id;
-                // Для базовых параметров считаем, что источник - это кол-во этикеток
-                if (!['labels-count', 'roll-length', 'roll-diameter'].includes(source)) {
-                    source = 'labels-count';
-                }
-                calculate(source);
+        function populateMaterialDropdown() {
+            const selectedValue = ui.material.value;
+            ui.material.innerHTML = '';
+            const materialKeys = Object.keys(liveMaterials).sort((a, b) => liveMaterials[a].name.localeCompare(liveMaterials[b].name));
+            if (materialKeys.length === 0) {
+                 ui.material.innerHTML = '<option value="">Справочник пуст</option>';
+                 return;
+            }
+            materialKeys.forEach(key => {
+                const material = liveMaterials[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = material.name;
+                ui.material.appendChild(option);
             });
-        });
+            if (liveMaterials[selectedValue]) ui.material.value = selectedValue;
+        }
 
-        // --- Переход по Enter ---
-        const focusableInputs = [
-            ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
-            ui.labelsCount, ui.rollLength, ui.rollDiameter
-        ];
+        function renderAdminPanel() {
+            ui.materialsListContainer.innerHTML = '';
+            const materialKeys = Object.keys(liveMaterials).sort((a, b) => liveMaterials[a].name.localeCompare(liveMaterials[b].name));
+            materialKeys.forEach(key => {
+                const material = liveMaterials[key];
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex justify-between items-center p-3 rounded-lg bg-zinc-100 dark:bg-zinc-700/50';
+                itemDiv.setAttribute('data-id', key);
+                itemDiv.innerHTML = `
+                    <div class="flex-grow grid grid-cols-1 sm:grid-cols-4 gap-3 items-center">
+                        <p class="sm:col-span-2 font-semibold text-sm header-title">${material.name}</p>
+                        <input readonly type="number" value="${material.thickness}" data-field="thickness" class="form-input px-2 py-1 border rounded-md text-sm transition material-input bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                        <input readonly type="number" value="${material.density}" data-field="density" class="form-input px-2 py-1 border rounded-md text-sm transition material-input bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0 ml-4">
+                        <button class="edit-material-btn w-8 h-8 flex items-center justify-center text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-full transition" title="Редактировать">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>
+                        </button>
+                        <button class="delete-material-btn w-8 h-8 flex items-center justify-center text-red-700 hover:bg-red-100 dark:hover:bg-red-900/50 dark:text-red-400 rounded-full transition" title="Удалить">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </div>
+                `;
+                ui.materialsListContainer.appendChild(itemDiv);
+            });
+        }
+        
+        function listenForMaterials() {
+            if (unsubscribeMaterials) unsubscribeMaterials();
+            unsubscribeMaterials = onSnapshot(materialsCollectionRef, (snapshot) => {
+                liveMaterials = {};
+                snapshot.forEach((doc) => liveMaterials[doc.id] = doc.data());
+                populateMaterialDropdown();
+                renderAdminPanel();
+                calculate('labels-count');
+            }, (error) => {
+                 console.error("Ошибка Firestore listener: ", error);
+                 ui.appScreen.innerHTML = `<h1>Ошибка доступа к базе данных.</h1><p>Убедитесь, что правила безопасности Firestore разрешают чтение. Ошибка: ${error.message}</p>`;
+            });
+        }
+        
+        async function seedInitialData() {
+            const initialMaterials = {
+                'semiglossPaper': { name: 'Бумажная полуглянцевая', thickness: 136, density: 152 },
+                'whitePolymer': { name: 'Белая полимерная', thickness: 127, density: 119 },
+            };
+            const snapshot = await getDocs(materialsCollectionRef);
+            if (snapshot.empty) {
+                console.log("Коллекция пуста. Добавляю начальные данные...");
+                const batch = writeBatch(db);
+                Object.keys(initialMaterials).forEach(key => {
+                    const docRef = doc(db, "roll_materials", key);
+                    batch.set(docRef, initialMaterials[key]);
+                });
+                await batch.commit();
+            }
+        }
 
-        focusableInputs.forEach((input, index) => {
-            input.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' || event.keyCode === 13) {
-                    event.preventDefault(); // Предотвращаем стандартное поведение (например, отправку формы)
-                    
-                    const nextIndex = index + 1;
-                    if (nextIndex < focusableInputs.length) {
-                        const nextInput = focusableInputs[nextIndex];
-                        nextInput.focus();
-                        // Если это текстовое поле, выделяем его содержимое
-                        if (nextInput.select) {
-                           nextInput.select();
-                        }
+        // --- Слушатели событий ---
+        function setupEventListeners() {
+            const inputsToListen = [ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize, ui.labelsCount, ui.rollLength, ui.rollDiameter];
+            inputsToListen.forEach(input => {
+                input.addEventListener('input', () => {
+                    let source = ['labels-count', 'roll-length', 'roll-diameter'].includes(input.id) ? input.id : 'labels-count';
+                    calculate(source);
+                });
+            });
+
+            ui.authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                ui.authMessage.textContent = '';
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } catch (error) {
+                    console.error("Ошибка входа:", error.code);
+                    ui.authMessage.textContent = 'Неверный email или пароль.';
+                }
+            });
+            ui.logoutBtn.addEventListener('click', () => signOut(auth));
+
+            ui.manageMaterialsBtn.addEventListener('click', () => ui.materialsModal.style.display = 'flex');
+            ui.closeMaterialsModalBtn.addEventListener('click', () => ui.materialsModal.style.display = 'none');
+            ui.modalBackdrop.addEventListener('click', () => ui.materialsModal.style.display = 'none');
+            ui.addMaterialForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('new-material-name').value.trim();
+                const thickness = Number(document.getElementById('new-material-thickness').value);
+                const density = Number(document.getElementById('new-material-density').value);
+                if (name && thickness > 0 && density > 0) {
+                    try {
+                        const newMaterialRef = doc(collection(db, "roll_materials"));
+                        await setDoc(newMaterialRef, { name, thickness, density });
+                        ui.addMaterialForm.reset();
+                    } catch (error) { console.error("Ошибка при добавлении материала: ", error); }
+                }
+            });
+
+            ui.materialsListContainer.addEventListener('click', async (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                const row = button.closest('[data-id]');
+                const id = row.dataset.id;
+                if (!id) return;
+
+                if (button.classList.contains('delete-material-btn')) {
+                    // Убираем ненадежное окно confirm() и удаляем сразу.
+                    // Пользователь явно нажал на иконку удаления.
+                    try {
+                        await deleteDoc(doc(db, "roll_materials", id));
+                    } catch (error) {
+                        console.error("Ошибка удаления: ", error);
+                        // В будущем здесь можно добавить уведомление об ошибке для пользователя
+                    }
+                    return; // Завершаем выполнение, чтобы не перейти к логике редактирования
+                }
+
+                if (button.classList.contains('edit-material-btn')) {
+                    const thicknessInput = row.querySelector('input[data-field="thickness"]');
+                    const densityInput = row.querySelector('input[data-field="density"]');
+                    const isEditing = button.classList.contains('is-editing');
+
+                    if (isEditing) {
+                        const newThickness = Number(thicknessInput.value);
+                        const newDensity = Number(densityInput.value);
+                        try {
+                            await setDoc(doc(db, "roll_materials", id), { ...liveMaterials[id], thickness: newThickness, density: newDensity });
+                            thicknessInput.setAttribute('readonly', true);
+                            densityInput.setAttribute('readonly', true);
+                            thicknessInput.classList.add('bg-gray-100', 'dark:bg-zinc-800/50', 'cursor-not-allowed');
+                            densityInput.classList.add('bg-gray-100', 'dark:bg-zinc-800/50', 'cursor-not-allowed');
+                            button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z" /></svg>`;
+                            button.classList.remove('is-editing');
+                            button.setAttribute('title', 'Редактировать');
+                        } catch (error) { console.error("Ошибка обновления: ", error); }
+                    } else {
+                        thicknessInput.removeAttribute('readonly');
+                        densityInput.removeAttribute('readonly');
+                        thicknessInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800/50', 'cursor-not-allowed');
+                        densityInput.classList.remove('bg-gray-100', 'dark:bg-zinc-800/50', 'cursor-not-allowed');
+                        thicknessInput.focus();
+                        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+                        button.classList.add('is-editing');
+                        button.setAttribute('title', 'Сохранить');
                     }
                 }
             });
-        });
+        }
 
         // --- Управление темой ---
         const themeToggleInput = document.getElementById('theme-toggle-input');
         function applyTheme(theme) {
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                themeToggleInput.checked = true;
-            } else {
-                document.documentElement.classList.remove('dark');
-                themeToggleInput.checked = false;
-            }
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            themeToggleInput.checked = theme === 'dark';
         }
         themeToggleInput.addEventListener('change', () => {
             const newTheme = themeToggleInput.checked ? 'dark' : 'light';
             localStorage.setItem('theme', newTheme);
             applyTheme(newTheme);
         });
-        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        applyTheme(savedTheme);
-
-        // --- Первоначальный расчет при загрузке страницы ---
-        window.addEventListener('DOMContentLoaded', () => calculate('labels-count'));
+        
+        // --- Инициализация ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            materialsCollectionRef = collection(db, 'roll_materials');
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("Пользователь вошел:", user.email);
+                    console.log("UID пользователя:", user.uid); // ВАЖНО для правил безопасности
+                    ui.authScreen.style.display = 'none';
+                    ui.appScreen.style.display = 'block';
+                    ui.userEmail.textContent = user.email;
+                    
+                    const isAdmin = user.email === ADMIN_EMAIL;
+                    ui.manageMaterialsBtn.style.display = isAdmin ? 'block' : 'none';
+                    
+                    await seedInitialData(); 
+                    listenForMaterials();
+                } else {
+                    console.log("Пользователь не вошел в систему.");
+                    ui.authScreen.style.display = 'flex';
+                    ui.appScreen.style.display = 'none';
+                    if (unsubscribeMaterials) unsubscribeMaterials();
+                }
+            });
+            
+            setupEventListeners();
+            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            applyTheme(savedTheme);
+        });
     </script>
 </body>
 </html>
-
 
 
