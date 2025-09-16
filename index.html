@@ -1,0 +1,364 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор рулонов</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f3f4f6;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --accent-color: #facc15; /* yellow-400 */
+            --accent-text: #111827;
+            --border-color: #e5e7eb;
+            --card-bg: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        html.dark {
+            --bg-primary: #3f3f46;      /* zinc-700 */
+            --bg-secondary: #27272a;    /* zinc-800 */
+            --text-primary: #f4f4f5;    /* zinc-100 */
+            --text-secondary: #a1a1aa;  /* zinc-400 */
+            --accent-color: #facc15;    /* yellow-400 */
+            --accent-text: #18181b;     /* zinc-900 */
+            --border-color: #52525b;    /* zinc-600 */
+            --card-bg: #3f3f46;         /* zinc-700 */
+            --shadow-color: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .main-container { background-color: var(--bg-secondary); }
+        .header-title { color: var(--text-primary); }
+        .card { background-color: var(--card-bg); box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color); }
+        .form-label { color: var(--text-secondary); }
+        .form-input, .form-select {
+            background-color: var(--bg-primary);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-input:focus, .form-select:focus {
+            --tw-ring-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--accent-text);
+        }
+        .btn-primary:hover { filter: brightness(0.9); }
+    </style>
+</head>
+<body class="main-container">
+
+    <div id="app" class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
+        <header class="mb-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl sm:text-4xl font-bold header-title">Калькулятор рулонов этикеток</h1>
+                <label for="theme-toggle-input" title="Переключить тему" class="relative w-16 h-8 flex items-center bg-sky-200 dark:bg-zinc-700 rounded-full cursor-pointer p-1 transition-colors duration-300">
+                    <input type="checkbox" id="theme-toggle-input" class="sr-only peer">
+                    <span class="w-6 h-6 bg-yellow-400 dark:bg-slate-300 rounded-full shadow-md transform transition-transform duration-300 flex items-center justify-center peer-checked:translate-x-8">
+                        <svg class="h-4 w-4 text-white block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m8.66-15.66l-.707.707M4.04 19.96l-.707.707M21 12h-1M4 12H3m16.96-7.96l-.707-.707M4.04 4.04l-.707-.707M12 12a2 2 0 100-4 2 2 0 000 4z" /></svg>
+                        <svg class="h-4 w-4 text-zinc-800 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    </span>
+                </label>
+            </div>
+        </header>
+
+        <div class="card p-6 sm:p-8 rounded-2xl">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                
+                <!-- Input Parameters Column -->
+                <div class="space-y-4">
+                    <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Входные данные</h2>
+                    
+                    <div>
+                        <label for="roll-width" class="block text-sm font-medium form-label mb-1">Ширина рулона, мм</label>
+                        <input type="number" id="roll-width" value="330" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+                    
+                    <div>
+                        <label for="label-width" class="block text-sm font-medium form-label mb-1">Ширина этикетки, мм</label>
+                        <input type="number" id="label-width" value="58" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+
+                    <div>
+                        <label for="label-height" class="block text-sm font-medium form-label mb-1">Высота этикетки, мм</label>
+                        <input type="number" id="label-height" value="40" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+
+                    <div>
+                        <label for="material" class="block text-sm font-medium form-label mb-1">Материал</label>
+                        <select id="material" class="form-select w-full px-4 py-2 border rounded-lg transition">
+                            <option value="semiglossPaper">Бумажная полуглянцевая</option>
+                            <option value="whitePolymer">Белая полимерная</option>
+                            <option value="crystalClear">Прозрачный хрусталь</option>
+                            <option value="imperialBlue">Императорский синий</option>
+                            <option value="imperialRed">Императорский красный</option>
+                            <option value="imperialGold">Императорское золото</option>
+                            <option value="imperialSilver">Императорское серебро</option>
+                            <option value="glossySilver">Глянцевое серебро</option>
+                            <option value="holographicSilver">Голографическое серебро</option>
+                            <option value="sugarClear">Прозрачный сахар</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="core-size" class="block text-sm font-medium form-label mb-1">Втулка (внутренний диаметр)</label>
+                        <select id="core-size" class="form-select w-full px-4 py-2 border rounded-lg transition">
+                            <option value="40">40 мм</option>
+                            <option value="76" selected>76 мм</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Calculated Results Column -->
+                <div class="space-y-4">
+                     <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Результаты</h2>
+                     <p class="text-sm form-label -mt-2">Измените любое из трех полей ниже, чтобы пересчитать остальные.</p>
+                    
+                     <div>
+                        <label for="labels-count" class="block text-sm font-medium form-label mb-1">Количество этикеток в рулоне, шт.</label>
+                        <input type="number" id="labels-count" value="1000" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+
+                    <div>
+                        <label for="roll-length" class="block text-sm font-medium form-label mb-1">Длина намотки, м</label>
+                        <input type="number" id="roll-length" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+
+                    <div>
+                        <label for="roll-diameter" class="block text-sm font-medium form-label mb-1">Диаметр готового рулона, мм</label>
+                        <input type="number" id="roll-diameter" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                    </div>
+                    
+                    <div>
+                        <label for="usable-width" class="block text-sm font-medium form-label mb-1">Рабочая ширина для раскладки, мм</label>
+                        <input type="text" id="usable-width" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label for="streams-count" class="block text-sm font-medium form-label mb-1">Количество ручьев на рабочей ширине</label>
+                        <input type="text" id="streams-count" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                    </div>
+
+                    <div>
+                        <label for="roll-weight" class="block text-sm font-medium form-label mb-1">Примерный вес рулона, кг</label>
+                        <input type="text" id="roll-weight" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // --- КОНСТАНТЫ ---
+        // Здесь вы можете добавить свои материалы и их параметры
+        // thickness: общая толщина материала с подложкой в микронах (мкм)
+        // density: плотность материала в граммах на квадратный метр (г/м^2)
+        const MATERIALS = {
+            'semiglossPaper': { thickness: 136, density: 152 },
+            'whitePolymer': { thickness: 127, density: 119 },
+            'crystalClear': { thickness: 95, density: 108 },
+            'imperialBlue': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
+            'imperialRed': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
+            'imperialGold': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
+            'imperialSilver': { thickness: 150, density: 150 }, // Плотность-заглушка, уточните значение
+            'glossySilver': { thickness: 105, density: 126 },
+            'holographicSilver': { thickness: 125, density: 130 }, // Плотность-заглушка, уточните значение
+            'sugarClear': { thickness: 155, density: 145 }, // Плотность-заглушка, уточните значение
+        };
+
+        // Параметры втулок
+        // innerDiameter: внутренний диаметр в мм
+        // outerDiameter: ВНЕШНИЙ диаметр в мм.
+        // weightPerMmKg: вес втулки в кг на 1 мм ширины. (1.54кг / 1000мм = 0.00154)
+        const CORES = {
+            '40': { innerDiameter: 40, outerDiameter: 44, weightPerMmKg: 0.00015 }, // 0.15 кг / 1000 мм
+            '76': { innerDiameter: 76, outerDiameter: 92, weightPerMmKg: 0.00154 }, // 1.54 кг / 1000 мм
+        };
+
+        const GAP_VERTICAL_MM = 15; // Зазор между этикетками по вертикали в мм
+        const GAP_HORIZONTAL_MM = 4; // Зазор между этикетками по горизонтали в мм
+        const EDGE_TRIM_MM = 12; // Отступ от края печатной области
+        const MAX_PRINT_WIDTH_MM = 320; // Максимальное поле печати
+
+        // --- Получение элементов DOM ---
+        const ui = {
+            rollWidth: document.getElementById('roll-width'),
+            labelWidth: document.getElementById('label-width'),
+            labelHeight: document.getElementById('label-height'),
+            material: document.getElementById('material'),
+            coreSize: document.getElementById('core-size'),
+            labelsCount: document.getElementById('labels-count'),
+            rollLength: document.getElementById('roll-length'),
+            rollDiameter: document.getElementById('roll-diameter'),
+            rollWeight: document.getElementById('roll-weight'),
+            streamsCount: document.getElementById('streams-count'),
+            usableWidth: document.getElementById('usable-width'),
+        };
+
+        // --- ОСНОВНАЯ ФУНКЦИЯ РАСЧЕТА ---
+        function calculate(source) {
+            // 1. Собираем все базовые параметры
+            const rollWidthMm = parseFloat(ui.rollWidth.value) || 0;
+            const labelWidthMm = parseFloat(ui.labelWidth.value) || 0;
+            const labelHeightMm = parseFloat(ui.labelHeight.value) || 0;
+            
+            const selectedMaterial = MATERIALS[ui.material.value];
+            const materialThicknessMm = selectedMaterial.thickness / 1000; // мкм -> мм
+            const materialDensityGsm = selectedMaterial.density;
+            
+            const selectedCore = CORES[ui.coreSize.value];
+            const coreOuterDiameterMm = selectedCore.outerDiameter;
+            const coreWeightPerMmKg = selectedCore.weightPerMmKg;
+
+
+            if (materialThicknessMm === 0) return; // Предотвращение деления на ноль
+
+            // Расчет рабочей ширины
+            const printableWidthMm = Math.min(rollWidthMm, MAX_PRINT_WIDTH_MM);
+            const usableWidthMm = printableWidthMm - EDGE_TRIM_MM;
+
+            // 2. В зависимости от того, какое поле было изменено, вычисляем остальные
+            let labels = parseFloat(ui.labelsCount.value) || 0;
+            let lengthM = parseFloat(ui.rollLength.value) || 0;
+            let diameterMm = parseFloat(ui.rollDiameter.value) || 0;
+
+            if (source === 'labels-count') {
+                // Длина (м) = Кол-во этикеток * (Высота этикетки + зазор) / 1000
+                lengthM = labels * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
+                
+                // Расчет диаметра по длине
+                const coreRadiusMm = coreOuterDiameterMm / 2;
+                const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
+                const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
+                diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
+                
+            } else if (source === 'roll-length') {
+                // Кол-во этикеток = Длина (м) * 1000 / (Высота этикетки + зазор)
+                labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
+                
+                // Расчет диаметра по длине (такой же, как выше)
+                const coreRadiusMm = coreOuterDiameterMm / 2;
+                const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
+                const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
+                diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
+
+            } else if (source === 'roll-diameter') {
+                // Расчет длины по диаметру
+                const rollRadiusMm = diameterMm / 2;
+                const coreRadiusMm = coreOuterDiameterMm / 2;
+                const materialAreaMm2 = Math.PI * (Math.pow(rollRadiusMm, 2) - Math.pow(coreRadiusMm, 2));
+                lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
+                
+                // Расчет кол-ва этикеток по длине (такой же, как выше)
+                labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
+            }
+
+            // 3. Расчет количества ручьев
+            const streams = (labelWidthMm > 0 && (labelWidthMm + GAP_HORIZONTAL_MM > 0)) 
+                ? Math.floor(usableWidthMm / (labelWidthMm + GAP_HORIZONTAL_MM)) 
+                : 0;
+
+            // 4. Расчет веса (всегда в конце)
+            const materialAreaM2 = lengthM * (rollWidthMm / 1000);
+            const materialWeightKg = materialAreaM2 * materialDensityGsm / 1000;
+            const coreWeightKg = coreWeightPerMmKg * rollWidthMm;
+            const weightKg = materialWeightKg + coreWeightKg;
+            
+            // 5. Обновление полей интерфейса
+            updateUI(source, { labels, lengthM, diameterMm, weightKg, streams, usableWidthMm });
+        }
+
+        // --- Функция обновления UI ---
+        function updateUI(source, values) {
+            if (source !== 'labels-count') {
+                ui.labelsCount.value = Math.round(values.labels);
+            }
+            if (source !== 'roll-length') {
+                ui.rollLength.value = values.lengthM.toFixed(2);
+            }
+            if (source !== 'roll-diameter') {
+                ui.rollDiameter.value = values.diameterMm.toFixed(1);
+            }
+            ui.rollWeight.value = values.weightKg.toFixed(3);
+            ui.streamsCount.value = values.streams;
+            ui.usableWidth.value = values.usableWidthMm.toFixed(1);
+        }
+        
+        // --- Установка слушателей событий ---
+        const inputsToListen = [
+            ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
+            ui.labelsCount, ui.rollLength, ui.rollDiameter
+        ];
+
+        inputsToListen.forEach(input => {
+            input.addEventListener('input', () => {
+                let source = input.id;
+                // Для базовых параметров считаем, что источник - это кол-во этикеток
+                if (!['labels-count', 'roll-length', 'roll-diameter'].includes(source)) {
+                    source = 'labels-count';
+                }
+                calculate(source);
+            });
+        });
+
+        // --- Переход по Enter ---
+        const focusableInputs = [
+            ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
+            ui.labelsCount, ui.rollLength, ui.rollDiameter
+        ];
+
+        focusableInputs.forEach((input, index) => {
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    event.preventDefault(); // Предотвращаем стандартное поведение (например, отправку формы)
+                    
+                    const nextIndex = index + 1;
+                    if (nextIndex < focusableInputs.length) {
+                        const nextInput = focusableInputs[nextIndex];
+                        nextInput.focus();
+                        // Если это текстовое поле, выделяем его содержимое
+                        if (nextInput.select) {
+                           nextInput.select();
+                        }
+                    }
+                }
+            });
+        });
+
+        // --- Управление темой ---
+        const themeToggleInput = document.getElementById('theme-toggle-input');
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                themeToggleInput.checked = true;
+            } else {
+                document.documentElement.classList.remove('dark');
+                themeToggleInput.checked = false;
+            }
+        }
+        themeToggleInput.addEventListener('change', () => {
+            const newTheme = themeToggleInput.checked ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(savedTheme);
+
+        // --- Первоначальный расчет при загрузке страницы ---
+        window.addEventListener('DOMContentLoaded', () => calculate('labels-count'));
+    </script>
+</body>
+</html>
+
