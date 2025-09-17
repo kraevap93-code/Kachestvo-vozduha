@@ -145,11 +145,15 @@
                                 <option value="76" selected>76 мм</option>
                             </select>
                         </div>
+                         <!-- Optimization Block -->
+                        <div id="optimization-results" class="mt-4 pt-4 border-t border-border-color space-y-3" style="display: none;">
+                           <!-- Suggestions will be rendered here by JS -->
+                        </div>
                     </div>
                     <!-- Calculated Results Column -->
                     <div class="space-y-4">
                          <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Результаты</h2>
-                         <p class="text-sm form-label -mt-2">Измените любое из трех полей ниже, чтобы пересчитать остальные.</p>
+                         <p class="text-sm form-label -mt-2">Измените любое из четырех полей ниже, чтобы пересчитать остальные.</p>
                          <div>
                             <label for="labels-count" class="block text-sm font-medium form-label mb-1">Количество этикеток в рулоне, шт.</label>
                             <input type="number" id="labels-count" value="1000" class="form-input w-full px-4 py-2 border rounded-lg transition">
@@ -163,6 +167,10 @@
                             <input type="number" id="roll-diameter" class="form-input w-full px-4 py-2 border rounded-lg transition">
                         </div>
                         <div>
+                            <label for="raports-count" class="block text-sm font-medium form-label mb-1">Количество рапортов</label>
+                            <input type="number" id="raports-count" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                        </div>
+                        <div>
                             <label for="usable-width" class="block text-sm font-medium form-label mb-1">Рабочая ширина для раскладки, мм</label>
                             <input type="text" id="usable-width" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
                         </div>
@@ -173,10 +181,6 @@
                         <div>
                             <label for="roll-weight" class="block text-sm font-medium form-label mb-1">Примерный вес рулона, кг</label>
                             <input type="text" id="roll-weight" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
-                        </div>
-                        <!-- Optimization Block -->
-                        <div id="optimization-results" class="mt-4 pt-4 border-t border-border-color space-y-3" style="display: none;">
-                           <!-- Suggestions will be rendered here by JS -->
                         </div>
                     </div>
                 </div>
@@ -271,6 +275,7 @@
             rollDiameter: document.getElementById('roll-diameter'),
             rollWeight: document.getElementById('roll-weight'),
             streamsCount: document.getElementById('streams-count'),
+            raportsCount: document.getElementById('raports-count'),
             usableWidth: document.getElementById('usable-width'),
             materialsModal: document.getElementById('materials-modal'),
             closeMaterialsModalBtn: document.getElementById('close-materials-modal'),
@@ -279,6 +284,17 @@
             addMaterialForm: document.getElementById('add-material-form'),
             optimizationResults: document.getElementById('optimization-results'),
         };
+
+        // --- Вспомогательные функции ---
+        function getStreamsPluralForm(number) {
+            const n = Math.abs(number);
+            const n100 = n % 100;
+            const n10 = n % 10;
+            if (n100 > 10 && n100 < 20) { return 'ручьев'; }
+            if (n10 > 1 && n10 < 5) { return 'ручья'; }
+            if (n10 === 1) { return 'ручей'; }
+            return 'ручьев';
+        }
 
         // --- Оптимизация ---
         function calculateOptimization(usableWidth, labelWidth, labelHeight) {
@@ -295,7 +311,14 @@
 
             const rotatedStreams = Math.floor(usableWidth / itemWidthWithGap(labelHeight));
             if (rotatedStreams > currentStreams) {
-                suggestions.push({ type: 'rotate', streams: rotatedStreams, newWidth: labelHeight, newHeight: labelWidth });
+                const rotatedWaste = usableWidth - (rotatedStreams * itemWidthWithGap(labelHeight));
+                suggestions.push({
+                    type: 'rotate',
+                    streams: rotatedStreams,
+                    saving: currentWaste - rotatedWaste,
+                    newWidth: labelHeight,
+                    newHeight: labelWidth
+                });
             }
 
             const potentialStreams = currentStreams + 1;
@@ -304,7 +327,14 @@
             if (requiredWidthForMoreStreams > 0 && requiredWidthForMoreStreams < labelWidth) {
                 const reductionPercentage = ((labelWidth - requiredWidthForMoreStreams) / labelWidth) * 100;
                 if (reductionPercentage < 10) {
-                    suggestions.push({ type: 'resize', streams: potentialStreams, newWidth: requiredWidthForMoreStreams, reduction: reductionPercentage });
+                    const resizedWaste = usableWidth - (potentialStreams * itemWidthWithGap(requiredWidthForMoreStreams));
+                    suggestions.push({
+                        type: 'resize',
+                        streams: potentialStreams,
+                        saving: currentWaste - resizedWaste,
+                        newWidth: requiredWidthForMoreStreams,
+                        reduction: reductionPercentage
+                    });
                 }
             }
             return { current: currentLayout, suggestions: suggestions };
@@ -312,24 +342,25 @@
 
         function renderOptimization(optimizationData) {
             const { current, suggestions } = optimizationData;
-
-            if (current.streams === 0) {
+            
+            if (current.streams === 0 && suggestions.length === 0) {
                 ui.optimizationResults.style.display = 'none';
                 return;
             }
             ui.optimizationResults.style.display = 'block';
 
             let html = `<h3 class="text-lg font-semibold header-title">Оптимизация раскладки</h3>`;
-            html += `<p class="text-sm form-label">Текущая раскладка: <span class="font-bold text-primary">${current.streams}</span> ручьев. Отходы: <span class="font-bold text-primary">${current.waste.toFixed(1)} мм</span>.</p>`;
+            html += `<p class="text-sm form-label">Текущая раскладка: <span class="font-bold text-primary">${current.streams}</span> ${getStreamsPluralForm(current.streams)}. Отходы: <span class="font-bold text-primary">${current.waste.toFixed(1)} мм</span>.</p>`;
 
             if (suggestions.length > 0) {
                 html += '<div class="space-y-2 mt-2">';
                 suggestions.forEach(s => {
+                    const streamsText = getStreamsPluralForm(s.streams);
                     if (s.type === 'rotate') {
                         html += `
                             <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 flex justify-between items-center">
                                 <p class="text-sm text-green-800 dark:text-green-300">
-                                    <strong>Повернуть на 90°:</strong> даст <span class="font-bold">${s.streams}</span> ручьев.
+                                    <strong>Повернуть на 90°:</strong> даст <span class="font-bold">${s.streams}</span> ${streamsText} (экономия ${s.saving.toFixed(1)} мм).
                                 </p>
                                 <button class="apply-suggestion-btn text-xs bg-green-500 text-white font-semibold px-3 py-1 rounded-md hover:bg-green-600 transition"
                                     data-type="rotate" data-new-width="${s.newWidth}" data-new-height="${s.newHeight}">
@@ -340,7 +371,7 @@
                          html += `
                             <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex justify-between items-center">
                                 <p class="text-sm text-blue-800 dark:text-blue-300">
-                                    <strong>Уменьшить ширину до ${s.newWidth.toFixed(1)} мм</strong> (-${s.reduction.toFixed(1)}%): даст <span class="font-bold">${s.streams}</span> ручьев.
+                                    <strong>Уменьшить до ${s.newWidth.toFixed(1)} мм</strong> (-${s.reduction.toFixed(1)}%): даст <span class="font-bold">${s.streams}</span> ${streamsText} (экономия ${s.saving.toFixed(1)} мм).
                                 </p>
                                 <button class="apply-suggestion-btn text-xs bg-blue-500 text-white font-semibold px-3 py-1 rounded-md hover:bg-blue-600 transition"
                                     data-type="resize" data-new-width="${s.newWidth}">
@@ -364,7 +395,6 @@
             const selectedMaterialKey = ui.material.value;
             const selectedMaterial = liveMaterials[selectedMaterialKey];
             if (!selectedMaterial) return;
-
             const materialThicknessMm = selectedMaterial.thickness / 1000;
             const materialDensityGsm = selectedMaterial.density;
             const selectedCore = CORES[ui.coreSize.value];
@@ -373,47 +403,56 @@
             if (materialThicknessMm === 0) return;
 
             const printableWidthMm = Math.min(rollWidthMm, MAX_PRINT_WIDTH_MM);
-            // Возвращаем старое правило для расчета рабочей ширины
             const usableWidthMm = printableWidthMm - EDGE_TRIM_MM;
-            
-            // --- Optimization Calculation ---
             const optimizationData = calculateOptimization(usableWidthMm, labelWidthMm, labelHeightMm);
             renderOptimization(optimizationData);
             const streams = optimizationData.current.streams;
-            let labels = parseFloat(ui.labelsCount.value) || 0, lengthM = parseFloat(ui.rollLength.value) || 0, diameterMm = parseFloat(ui.rollDiameter.value) || 0;
 
+            let labels;
             if (source === 'labels-count') {
-                lengthM = labels * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
-                const coreRadiusMm = coreOuterDiameterMm / 2;
-                const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
-                const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
-                diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
+                labels = parseFloat(ui.labelsCount.value) || 0;
             } else if (source === 'roll-length') {
+                const lengthM = parseFloat(ui.rollLength.value) || 0;
                 labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
-                const coreRadiusMm = coreOuterDiameterMm / 2;
-                const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
-                const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
-                diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
             } else if (source === 'roll-diameter') {
+                const diameterMm = parseFloat(ui.rollDiameter.value) || 0;
                 const rollRadiusMm = diameterMm / 2;
                 const coreRadiusMm = coreOuterDiameterMm / 2;
                 const materialAreaMm2 = Math.PI * (Math.pow(rollRadiusMm, 2) - Math.pow(coreRadiusMm, 2));
-                lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
+                const lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
                 labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
+            } else if (source === 'raports-count') {
+                const raports = parseFloat(ui.raportsCount.value) || 0;
+                labels = raports * streams;
             }
 
+            const raports = streams > 0 ? labels / streams : 0;
+            const lengthM = labels * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
+            const coreRadiusMm = coreOuterDiameterMm / 2;
+            const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
+            const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
+            const diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
             const materialAreaM2 = lengthM * (rollWidthMm / 1000);
             const materialWeightKg = materialAreaM2 * materialDensityGsm / 1000;
             const coreWeightKg = coreWeightPerMmKg * rollWidthMm;
             const weightKg = materialWeightKg + coreWeightKg;
             
-            updateUI(source, { labels, lengthM, diameterMm, weightKg, streams, usableWidthMm });
+            updateUI(source, { labels, lengthM, diameterMm, weightKg, streams, usableWidthMm, raports });
         }
 
         function updateUI(source, values) {
-            if (source !== 'labels-count') ui.labelsCount.value = Math.round(values.labels);
-            if (source !== 'roll-length') ui.rollLength.value = values.lengthM.toFixed(2);
-            if (source !== 'roll-diameter') ui.rollDiameter.value = values.diameterMm.toFixed(1);
+            if (source !== 'labels-count') {
+                ui.labelsCount.value = Math.round(values.labels);
+            }
+            if (source !== 'roll-length') {
+                ui.rollLength.value = values.lengthM.toFixed(2);
+            }
+            if (source !== 'roll-diameter') {
+                ui.rollDiameter.value = values.diameterMm.toFixed(1);
+            }
+            if (source !== 'raports-count') {
+                ui.raportsCount.value = Math.round(values.raports);
+            }
             ui.rollWeight.value = values.weightKg.toFixed(3);
             ui.streamsCount.value = values.streams;
             ui.usableWidth.value = values.usableWidthMm.toFixed(1);
@@ -518,29 +557,30 @@
 
         // --- Слушатели событий ---
         function setupEventListeners() {
-            const inputsToListen = [ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize, ui.labelsCount, ui.rollLength, ui.rollDiameter];
+            const inputsToListen = [ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize, ui.labelsCount, ui.rollLength, ui.rollDiameter, ui.raportsCount];
             inputsToListen.forEach(input => {
                 input.addEventListener('input', () => {
-                    let source = ['labels-count', 'roll-length', 'roll-diameter'].includes(input.id) ? input.id : 'labels-count';
+                    let source = input.id;
+                    if (!['labels-count', 'roll-length', 'roll-diameter', 'raports-count'].includes(source)) {
+                        source = 'labels-count';
+                    }
                     calculate(source);
                 });
             });
 
-            // --- Переход по Enter ---
             const focusableInputs = [
                 ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
-                ui.labelsCount, ui.rollLength, ui.rollDiameter
+                ui.labelsCount, ui.rollLength, ui.rollDiameter, ui.raportsCount
             ];
 
             focusableInputs.forEach((input, index) => {
                 input.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' || event.keyCode === 13) {
-                        event.preventDefault(); // Предотвращаем стандартное поведение
+                        event.preventDefault();
                         const nextIndex = (index + 1) % focusableInputs.length;
-                        const nextInput = focusableInputs[nextIndex];
-                        nextInput.focus();
-                        if (nextInput.select) {
-                            nextInput.select();
+                        focusableInputs[nextIndex].focus();
+                        if (focusableInputs[nextIndex].select) {
+                            focusableInputs[nextIndex].select();
                         }
                     }
                 });
@@ -567,7 +607,7 @@
                         ui.authMessage.textContent = 'Неверный email или пароль.';
                         ui.authMessage.classList.add('text-red-500');
                     }
-                } else { // Registration mode
+                } else {
                     const confirmPassword = ui.confirmPasswordInput.value;
                     if (password !== confirmPassword) {
                         ui.authMessage.textContent = 'Пароли не совпадают.';
@@ -586,7 +626,7 @@
                         isLoginMode = true;
                         updateAuthView();
                         ui.authForm.reset();
-                        document.getElementById('email').value = email; // Keep email for convenience
+                        document.getElementById('email').value = email;
                     } catch (error) {
                         console.error("Ошибка регистрации:", error.code);
                         ui.authMessage.classList.add('text-red-500');
