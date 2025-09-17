@@ -64,19 +64,27 @@
     <!-- Auth Screen -->
     <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4">
         <div class="card p-6 sm:p-8 rounded-2xl w-full max-w-md">
-            <h2 class="text-2xl sm:text-3xl font-bold text-center mb-6 header-title">Вход в калькулятор</h2>
+            <h2 id="auth-title" class="text-2xl sm:text-3xl font-bold text-center mb-6 header-title">Вход в калькулятор</h2>
             <form id="auth-form">
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium form-label mb-1">Email</label>
                     <input type="email" id="email" required class="form-input w-full px-4 py-2 border rounded-lg transition" value="lequangduc19865@gmail.com">
                 </div>
-                <div class="mb-6">
+                <div class="mb-4">
                     <label for="password" class="block text-sm font-medium form-label mb-1">Пароль</label>
                     <input type="password" id="password" required class="form-input w-full px-4 py-2 border rounded-lg transition">
                 </div>
+                <div id="confirm-password-container" class="mb-6 hidden">
+                    <label for="confirm-password" class="block text-sm font-medium form-label mb-1">Подтвердите пароль</label>
+                    <input type="password" id="confirm-password" class="form-input w-full px-4 py-2 border rounded-lg transition">
+                </div>
                 <button id="auth-button" type="submit" class="btn-primary w-full font-semibold py-2.5 px-4 rounded-lg transition duration-300">Войти</button>
             </form>
-            <p id="auth-message" class="text-center mt-4 text-sm text-red-500"></p>
+            <p id="auth-message" class="text-center mt-4 text-sm"></p>
+            <p class="text-center mt-4 text-sm form-label">
+                <span id="auth-toggle-prompt">Нет аккаунта?</span>
+                <a href="#" id="toggle-auth-mode" class="font-semibold text-yellow-500 hover:underline">Зарегистрироваться</a>
+            </p>
         </div>
     </div>
 
@@ -109,6 +117,7 @@
 
             <div class="card p-6 sm:p-8 rounded-2xl">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <!-- Input Parameters Column -->
                     <div class="space-y-4">
                         <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Входные данные</h2>
                         <div>
@@ -137,6 +146,7 @@
                             </select>
                         </div>
                     </div>
+                    <!-- Calculated Results Column -->
                     <div class="space-y-4">
                          <h2 class="text-xl sm:text-2xl font-semibold header-title border-b border-border-color pb-2">Результаты</h2>
                          <p class="text-sm form-label -mt-2">Измените любое из трех полей ниже, чтобы пересчитать остальные.</p>
@@ -163,6 +173,10 @@
                         <div>
                             <label for="roll-weight" class="block text-sm font-medium form-label mb-1">Примерный вес рулона, кг</label>
                             <input type="text" id="roll-weight" readonly class="form-input w-full px-4 py-2 border rounded-lg transition bg-gray-100 dark:bg-zinc-800/50 cursor-not-allowed">
+                        </div>
+                        <!-- Optimization Block -->
+                        <div id="optimization-results" class="mt-4 pt-4 border-t border-border-color space-y-3" style="display: none;">
+                           <!-- Suggestions will be rendered here by JS -->
                         </div>
                     </div>
                 </div>
@@ -217,13 +231,14 @@
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- Глобальные переменные и константы ---
         let db, auth;
         let materialsCollectionRef;
         let liveMaterials = {};
         let unsubscribeMaterials = null;
+        let isLoginMode = true;
         const ADMIN_EMAIL = "lequangduc19865@gmail.com";
         const CORES = {
             '40': { innerDiameter: 40, outerDiameter: 44, weightPerMmKg: 0.00015 },
@@ -237,6 +252,12 @@
             appScreen: document.getElementById('app-screen'),
             authForm: document.getElementById('auth-form'),
             authMessage: document.getElementById('auth-message'),
+            authTitle: document.getElementById('auth-title'),
+            authButton: document.getElementById('auth-button'),
+            confirmPasswordContainer: document.getElementById('confirm-password-container'),
+            confirmPasswordInput: document.getElementById('confirm-password'),
+            authTogglePrompt: document.getElementById('auth-toggle-prompt'),
+            toggleAuthModeLink: document.getElementById('toggle-auth-mode'),
             logoutBtn: document.getElementById('logout-btn'),
             userEmail: document.getElementById('user-email'),
             manageMaterialsBtn: document.getElementById('manage-materials-btn'),
@@ -256,7 +277,84 @@
             modalBackdrop: document.getElementById('modal-backdrop'),
             materialsListContainer: document.getElementById('materials-list-container'),
             addMaterialForm: document.getElementById('add-material-form'),
+            optimizationResults: document.getElementById('optimization-results'),
         };
+
+        // --- Оптимизация ---
+        function calculateOptimization(usableWidth, labelWidth, labelHeight) {
+            if (!usableWidth || !labelWidth || !labelHeight) {
+                return { current: { streams: 0, waste: usableWidth }, suggestions: [] };
+            }
+
+            const suggestions = [];
+            const itemWidthWithGap = (width) => width + GAP_HORIZONTAL_MM;
+
+            const currentStreams = Math.floor(usableWidth / itemWidthWithGap(labelWidth));
+            const currentWaste = usableWidth - (currentStreams * itemWidthWithGap(labelWidth));
+            const currentLayout = { streams: currentStreams, waste: currentWaste };
+
+            const rotatedStreams = Math.floor(usableWidth / itemWidthWithGap(labelHeight));
+            if (rotatedStreams > currentStreams) {
+                suggestions.push({ type: 'rotate', streams: rotatedStreams, newWidth: labelHeight, newHeight: labelWidth });
+            }
+
+            const potentialStreams = currentStreams + 1;
+            const requiredWidthForMoreStreams = (usableWidth / potentialStreams) - GAP_HORIZONTAL_MM;
+            
+            if (requiredWidthForMoreStreams > 0 && requiredWidthForMoreStreams < labelWidth) {
+                const reductionPercentage = ((labelWidth - requiredWidthForMoreStreams) / labelWidth) * 100;
+                if (reductionPercentage < 10) {
+                    suggestions.push({ type: 'resize', streams: potentialStreams, newWidth: requiredWidthForMoreStreams, reduction: reductionPercentage });
+                }
+            }
+            return { current: currentLayout, suggestions: suggestions };
+        }
+
+        function renderOptimization(optimizationData) {
+            const { current, suggestions } = optimizationData;
+
+            if (current.streams === 0) {
+                ui.optimizationResults.style.display = 'none';
+                return;
+            }
+            ui.optimizationResults.style.display = 'block';
+
+            let html = `<h3 class="text-lg font-semibold header-title">Оптимизация раскладки</h3>`;
+            html += `<p class="text-sm form-label">Текущая раскладка: <span class="font-bold text-primary">${current.streams}</span> ручьев. Отходы: <span class="font-bold text-primary">${current.waste.toFixed(1)} мм</span>.</p>`;
+
+            if (suggestions.length > 0) {
+                html += '<div class="space-y-2 mt-2">';
+                suggestions.forEach(s => {
+                    if (s.type === 'rotate') {
+                        html += `
+                            <div class="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 flex justify-between items-center">
+                                <p class="text-sm text-green-800 dark:text-green-300">
+                                    <strong>Повернуть на 90°:</strong> даст <span class="font-bold">${s.streams}</span> ручьев.
+                                </p>
+                                <button class="apply-suggestion-btn text-xs bg-green-500 text-white font-semibold px-3 py-1 rounded-md hover:bg-green-600 transition"
+                                    data-type="rotate" data-new-width="${s.newWidth}" data-new-height="${s.newHeight}">
+                                    Применить
+                                </button>
+                            </div>`;
+                    } else if (s.type === 'resize') {
+                         html += `
+                            <div class="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex justify-between items-center">
+                                <p class="text-sm text-blue-800 dark:text-blue-300">
+                                    <strong>Уменьшить ширину до ${s.newWidth.toFixed(1)} мм</strong> (-${s.reduction.toFixed(1)}%): даст <span class="font-bold">${s.streams}</span> ручьев.
+                                </p>
+                                <button class="apply-suggestion-btn text-xs bg-blue-500 text-white font-semibold px-3 py-1 rounded-md hover:bg-blue-600 transition"
+                                    data-type="resize" data-new-width="${s.newWidth}">
+                                    Применить
+                                </button>
+                            </div>`;
+                    }
+                });
+                html += '</div>';
+            } else {
+                html += `<p class="text-sm form-label mt-2">Текущая раскладка оптимальна.</p>`;
+            }
+            ui.optimizationResults.innerHTML = html;
+        }
 
         // --- Основные функции ---
         function calculate(source) {
@@ -265,7 +363,6 @@
             const labelHeightMm = parseFloat(ui.labelHeight.value) || 0;
             const selectedMaterialKey = ui.material.value;
             const selectedMaterial = liveMaterials[selectedMaterialKey];
-            
             if (!selectedMaterial) return;
 
             const materialThicknessMm = selectedMaterial.thickness / 1000;
@@ -273,11 +370,18 @@
             const selectedCore = CORES[ui.coreSize.value];
             const coreOuterDiameterMm = selectedCore.outerDiameter;
             const coreWeightPerMmKg = selectedCore.weightPerMmKg;
-
             if (materialThicknessMm === 0) return;
 
             const printableWidthMm = Math.min(rollWidthMm, MAX_PRINT_WIDTH_MM);
-            const usableWidthMm = printableWidthMm - EDGE_TRIM_MM;
+            // Новое правило для расчета рабочей ширины
+            const usableWidthMm = rollWidthMm <= 308 
+                ? printableWidthMm 
+                : printableWidthMm - EDGE_TRIM_MM;
+            
+            // --- Optimization Calculation ---
+            const optimizationData = calculateOptimization(usableWidthMm, labelWidthMm, labelHeightMm);
+            renderOptimization(optimizationData);
+            const streams = optimizationData.current.streams;
             let labels = parseFloat(ui.labelsCount.value) || 0, lengthM = parseFloat(ui.rollLength.value) || 0, diameterMm = parseFloat(ui.rollDiameter.value) || 0;
 
             if (source === 'labels-count') {
@@ -300,7 +404,6 @@
                 labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
             }
 
-            const streams = (labelWidthMm > 0 && (labelWidthMm + GAP_HORIZONTAL_MM > 0)) ? Math.floor(usableWidthMm / (labelWidthMm + GAP_HORIZONTAL_MM)) : 0;
             const materialAreaM2 = lengthM * (rollWidthMm / 1000);
             const materialWeightKg = materialAreaM2 * materialDensityGsm / 1000;
             const coreWeightKg = coreWeightPerMmKg * rollWidthMm;
@@ -393,6 +496,27 @@
                 await batch.commit();
             }
         }
+        
+        function updateAuthView() {
+            ui.authMessage.textContent = '';
+            ui.authMessage.classList.remove('text-green-500', 'text-red-500');
+
+            if (isLoginMode) {
+                ui.authTitle.textContent = 'Вход в калькулятор';
+                ui.authButton.textContent = 'Войти';
+                ui.confirmPasswordContainer.classList.add('hidden');
+                ui.confirmPasswordInput.required = false;
+                ui.authTogglePrompt.textContent = 'Нет аккаунта? ';
+                ui.toggleAuthModeLink.textContent = 'Зарегистрироваться';
+            } else {
+                ui.authTitle.textContent = 'Регистрация';
+                ui.authButton.textContent = 'Зарегистрироваться';
+                ui.confirmPasswordContainer.classList.remove('hidden');
+                ui.confirmPasswordInput.required = true;
+                ui.authTogglePrompt.textContent = 'Уже есть аккаунт? ';
+                ui.toggleAuthModeLink.textContent = 'Войти';
+            }
+        }
 
         // --- Слушатели событий ---
         function setupEventListeners() {
@@ -404,18 +528,81 @@
                 });
             });
 
+            // --- Переход по Enter ---
+            const focusableInputs = [
+                ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize,
+                ui.labelsCount, ui.rollLength, ui.rollDiameter
+            ];
+
+            focusableInputs.forEach((input, index) => {
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.keyCode === 13) {
+                        event.preventDefault(); // Предотвращаем стандартное поведение
+                        const nextIndex = (index + 1) % focusableInputs.length;
+                        const nextInput = focusableInputs[nextIndex];
+                        nextInput.focus();
+                        if (nextInput.select) {
+                            nextInput.select();
+                        }
+                    }
+                });
+            });
+
+            ui.toggleAuthModeLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                isLoginMode = !isLoginMode;
+                updateAuthView();
+            });
+
             ui.authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 ui.authMessage.textContent = '';
+                ui.authMessage.classList.remove('text-red-500', 'text-green-500');
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-                try {
-                    await signInWithEmailAndPassword(auth, email, password);
-                } catch (error) {
-                    console.error("Ошибка входа:", error.code);
-                    ui.authMessage.textContent = 'Неверный email или пароль.';
+                
+                if (isLoginMode) {
+                    try {
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } catch (error) {
+                        console.error("Ошибка входа:", error.code);
+                        ui.authMessage.textContent = 'Неверный email или пароль.';
+                        ui.authMessage.classList.add('text-red-500');
+                    }
+                } else { // Registration mode
+                    const confirmPassword = ui.confirmPasswordInput.value;
+                    if (password !== confirmPassword) {
+                        ui.authMessage.textContent = 'Пароли не совпадают.';
+                        ui.authMessage.classList.add('text-red-500');
+                        return;
+                    }
+                    if (password.length < 6) {
+                        ui.authMessage.textContent = 'Пароль должен быть не менее 6 символов.';
+                        ui.authMessage.classList.add('text-red-500');
+                        return;
+                    }
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                        ui.authMessage.textContent = 'Регистрация прошла успешно! Теперь вы можете войти.';
+                        ui.authMessage.classList.add('text-green-500');
+                        isLoginMode = true;
+                        updateAuthView();
+                        ui.authForm.reset();
+                        document.getElementById('email').value = email; // Keep email for convenience
+                    } catch (error) {
+                        console.error("Ошибка регистрации:", error.code);
+                        ui.authMessage.classList.add('text-red-500');
+                        if (error.code === 'auth/email-already-in-use') {
+                            ui.authMessage.textContent = 'Этот email уже зарегистрирован.';
+                        } else if (error.code === 'auth/weak-password') {
+                            ui.authMessage.textContent = 'Пароль слишком слабый.';
+                        } else {
+                            ui.authMessage.textContent = 'Произошла ошибка регистрации.';
+                        }
+                    }
                 }
             });
+            
             ui.logoutBtn.addEventListener('click', () => signOut(auth));
 
             ui.manageMaterialsBtn.addEventListener('click', () => ui.materialsModal.style.display = 'flex');
@@ -434,6 +621,21 @@
                     } catch (error) { console.error("Ошибка при добавлении материала: ", error); }
                 }
             });
+            
+            ui.appScreen.addEventListener('click', (e) => {
+                if (e.target.classList.contains('apply-suggestion-btn')) {
+                    const button = e.target;
+                    const type = button.dataset.type;
+                    
+                    if (type === 'rotate') {
+                        ui.labelWidth.value = button.dataset.newWidth;
+                        ui.labelHeight.value = button.dataset.newHeight;
+                    } else if (type === 'resize') {
+                        ui.labelWidth.value = parseFloat(button.dataset.newWidth).toFixed(1);
+                    }
+                    calculate('labels-count');
+                }
+            });
 
             ui.materialsListContainer.addEventListener('click', async (e) => {
                 const button = e.target.closest('button');
@@ -443,15 +645,12 @@
                 if (!id) return;
 
                 if (button.classList.contains('delete-material-btn')) {
-                    // Убираем ненадежное окно confirm() и удаляем сразу.
-                    // Пользователь явно нажал на иконку удаления.
                     try {
                         await deleteDoc(doc(db, "roll_materials", id));
                     } catch (error) {
                         console.error("Ошибка удаления: ", error);
-                        // В будущем здесь можно добавить уведомление об ошибке для пользователя
                     }
-                    return; // Завершаем выполнение, чтобы не перейти к логике редактирования
+                    return;
                 }
 
                 if (button.classList.contains('edit-material-btn')) {
@@ -508,7 +707,7 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     console.log("Пользователь вошел:", user.email);
-                    console.log("UID пользователя:", user.uid); // ВАЖНО для правил безопасности
+                    console.log("UID пользователя:", user.uid);
                     ui.authScreen.style.display = 'none';
                     ui.appScreen.style.display = 'block';
                     ui.userEmail.textContent = user.email;
@@ -527,11 +726,13 @@
             });
             
             setupEventListeners();
+            updateAuthView();
             const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             applyTheme(savedTheme);
         });
     </script>
 </body>
 </html>
+
 
 
