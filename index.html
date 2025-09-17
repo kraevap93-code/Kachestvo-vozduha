@@ -373,10 +373,8 @@
             if (materialThicknessMm === 0) return;
 
             const printableWidthMm = Math.min(rollWidthMm, MAX_PRINT_WIDTH_MM);
-            // Новое правило для расчета рабочей ширины
-            const usableWidthMm = rollWidthMm <= 308 
-                ? printableWidthMm 
-                : printableWidthMm - EDGE_TRIM_MM;
+            // Возвращаем старое правило для расчета рабочей ширины
+            const usableWidthMm = printableWidthMm - EDGE_TRIM_MM;
             
             // --- Optimization Calculation ---
             const optimizationData = calculateOptimization(usableWidthMm, labelWidthMm, labelHeightMm);
@@ -733,6 +731,7 @@
     </script>
 </body>
 </html>
+
 
 
 
