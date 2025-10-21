@@ -68,7 +68,7 @@
             <form id="auth-form">
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium form-label mb-1">Email</label>
-                    <input type="email" id="email" required class="form-input w-full px-4 py-2 border rounded-lg transition" value="lequangduc19865@gmail.com">
+                    <input type="email" id="email" required class="form-input w-full px-4 py-2 border rounded-lg transition" placeholder="your@email.com">
                 </div>
                 <div class="mb-4">
                     <label for="password" class="block text-sm font-medium form-label mb-1">Пароль</label>
@@ -147,7 +147,7 @@
                         </div>
                          <!-- Optimization Block -->
                         <div id="optimization-results" class="mt-4 pt-4 border-t border-border-color space-y-3" style="display: none;">
-                           <!-- Suggestions will be rendered here by JS -->
+                            <!-- Suggestions will be rendered here by JS -->
                         </div>
                     </div>
                     <!-- Calculated Results Column -->
@@ -223,19 +223,19 @@
 
 
     <script type="module">
+        // ИЗМЕНЕНО: Вставьте сюда ваши учетные данные Firebase.
         const firebaseConfig = {
-          apiKey: "AIzaSyA2RhpbrMryEF2-lsHSDkkXA42q3JzK-xw",
-          authDomain: "kachestvo-vozduha.firebaseapp.com",
-          projectId: "kachestvo-vozduha",
-          storageBucket: "kachestvo-vozduha.appspot.com",
-          messagingSenderId: "379571445431",
-          appId: "1:379571445431:web:d41e2477feac5c29e97732",
-          measurementId: "G-7EYBRBV2JN"
+            apiKey: "AIzaSyA2RhpbrMryEF2-lsHSDkkXA42q3JzK-xw",
+            authDomain: "kachestvo-vozduha.firebaseapp.com",
+            projectId: "kachestvo-vozduha",
+            storageBucket: "kachestvo-vozduha.appspot.com",
+            messagingSenderId: "379571445431",
+            appId: "1:379571445431:web:d41e2477feac5c29e97732"
         };
         
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, getDocs, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- Глобальные переменные и константы ---
         let db, auth;
@@ -243,12 +243,17 @@
         let liveMaterials = {};
         let unsubscribeMaterials = null;
         let isLoginMode = true;
-        const ADMIN_EMAIL = "lequangduc19865@gmail.com";
+        const ADMIN_EMAIL = "lequangduc19865@gmail.com"; // Вы можете изменить email администратора
+        
         const CORES = {
             '40': { innerDiameter: 40, outerDiameter: 44, weightPerMmKg: 0.00015 },
             '76': { innerDiameter: 76, outerDiameter: 92, weightPerMmKg: 0.00154 },
         };
-        const GAP_VERTICAL_MM = 10, GAP_HORIZONTAL_MM = 4, EDGE_TRIM_MM = 12, MAX_PRINT_WIDTH_MM = 320;
+
+        const GAP_VERTICAL_MM = 8,
+              GAP_HORIZONTAL_MM = 3,
+              EDGE_TRIM_MM = 10,
+              MAX_PRINT_WIDTH_MM = 318;
 
         // --- Элементы DOM ---
         const ui = {
@@ -408,30 +413,37 @@
             renderOptimization(optimizationData);
             const streams = optimizationData.current.streams;
 
-            let labels;
-            if (source === 'labels-count') {
-                labels = parseFloat(ui.labelsCount.value) || 0;
+            // ИСПРАВЛЕНИЕ: Логика расчета длины и связанных параметров.
+            let raports, lengthM, labels, diameterMm;
+
+            // Определяем базовые значения (рапорты и длина) в зависимости от того, какое поле изменил пользователь.
+            if (source === 'raports-count') {
+                raports = parseFloat(ui.raportsCount.value) || 0;
+                lengthM = raports * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
             } else if (source === 'roll-length') {
-                const lengthM = parseFloat(ui.rollLength.value) || 0;
-                labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
+                lengthM = parseFloat(ui.rollLength.value) || 0;
+                raports = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
             } else if (source === 'roll-diameter') {
-                const diameterMm = parseFloat(ui.rollDiameter.value) || 0;
+                diameterMm = parseFloat(ui.rollDiameter.value) || 0;
                 const rollRadiusMm = diameterMm / 2;
                 const coreRadiusMm = coreOuterDiameterMm / 2;
                 const materialAreaMm2 = Math.PI * (Math.pow(rollRadiusMm, 2) - Math.pow(coreRadiusMm, 2));
-                const lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
-                labels = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
-            } else if (source === 'raports-count') {
-                const raports = parseFloat(ui.raportsCount.value) || 0;
-                labels = raports * streams;
+                lengthM = (materialThicknessMm > 0) ? (materialAreaMm2 / materialThicknessMm) / 1000 : 0;
+                raports = (labelHeightMm + GAP_VERTICAL_MM > 0) ? (lengthM * 1000 / (labelHeightMm + GAP_VERTICAL_MM)) : 0;
+            } else { // По умолчанию или если изменено количество этикеток
+                labels = parseFloat(ui.labelsCount.value) || 0;
+                raports = streams > 0 ? labels / streams : 0;
+                lengthM = raports * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
             }
 
-            const raports = streams > 0 ? labels / streams : 0;
-            const lengthM = labels * (labelHeightMm + GAP_VERTICAL_MM) / 1000;
+            // Теперь, имея правильные значения длины и рапортов, вычисляем все остальные зависимые величины.
+            labels = raports * streams;
+            
             const coreRadiusMm = coreOuterDiameterMm / 2;
             const materialAreaMm2 = lengthM * 1000 * materialThicknessMm;
             const totalAreaMm2 = materialAreaMm2 + Math.PI * Math.pow(coreRadiusMm, 2);
-            const diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI);
+            diameterMm = 2 * Math.sqrt(totalAreaMm2 / Math.PI); // Пересчитываем диаметр на основе правильной длины
+            
             const materialAreaM2 = lengthM * (rollWidthMm / 1000);
             const materialWeightKg = materialAreaM2 * materialDensityGsm / 1000;
             const coreWeightKg = coreWeightPerMmKg * rollWidthMm;
@@ -513,7 +525,7 @@
                 calculate('labels-count');
             }, (error) => {
                  console.error("Ошибка Firestore listener: ", error);
-                 ui.appScreen.innerHTML = `<h1>Ошибка доступа к базе данных.</h1><p>Убедитесь, что правила безопасности Firestore разрешают чтение. Ошибка: ${error.message}</p>`;
+                 ui.appScreen.innerHTML = `<h1>Ошибка доступа к базе данных.</h1><p>Убедитесь, что правила безопасности Firestore разрешают чтение для аутентифицированных пользователей. Ошибка: ${error.message}</p>`;
             });
         }
         
@@ -522,18 +534,22 @@
                 'semiglossPaper': { name: 'Бумажная полуглянцевая', thickness: 136, density: 152 },
                 'whitePolymer': { name: 'Белая полимерная', thickness: 127, density: 119 },
             };
-            const snapshot = await getDocs(materialsCollectionRef);
-            if (snapshot.empty) {
-                console.log("Коллекция пуста. Добавляю начальные данные...");
-                const batch = writeBatch(db);
-                Object.keys(initialMaterials).forEach(key => {
-                    const docRef = doc(db, "roll_materials", key);
-                    batch.set(docRef, initialMaterials[key]);
-                });
-                await batch.commit();
+            try {
+                const snapshot = await getDocs(materialsCollectionRef);
+                if (snapshot.empty) {
+                    console.log("Коллекция пуста. Добавляю начальные данные...");
+                    const batch = writeBatch(db);
+                    Object.keys(initialMaterials).forEach(key => {
+                        const docRef = doc(materialsCollectionRef, key);
+                        batch.set(docRef, initialMaterials[key]);
+                    });
+                    await batch.commit();
+                }
+            } catch (error) {
+                console.error("Не удалось получить доступ к Firestore для начальной загрузки. Проверьте правила безопасности.", error);
             }
         }
-        
+
         function updateAuthView() {
             ui.authMessage.textContent = '';
             ui.authMessage.classList.remove('text-green-500', 'text-red-500');
@@ -554,7 +570,7 @@
                 ui.toggleAuthModeLink.textContent = 'Войти';
             }
         }
-
+        
         // --- Слушатели событий ---
         function setupEventListeners() {
             const inputsToListen = [ui.rollWidth, ui.labelWidth, ui.labelHeight, ui.material, ui.coreSize, ui.labelsCount, ui.rollLength, ui.rollDiameter, ui.raportsCount];
@@ -586,7 +602,7 @@
                 });
             });
 
-            ui.toggleAuthModeLink.addEventListener('click', (e) => {
+             ui.toggleAuthModeLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 isLoginMode = !isLoginMode;
                 updateAuthView();
@@ -632,6 +648,8 @@
                         ui.authMessage.classList.add('text-red-500');
                         if (error.code === 'auth/email-already-in-use') {
                             ui.authMessage.textContent = 'Этот email уже зарегистрирован.';
+                        } else if (error.code === 'auth/invalid-email') {
+                             ui.authMessage.textContent = 'Неверный формат email.';
                         } else if (error.code === 'auth/weak-password') {
                             ui.authMessage.textContent = 'Пароль слишком слабый.';
                         } else {
@@ -640,7 +658,8 @@
                     }
                 }
             });
-            
+
+
             ui.logoutBtn.addEventListener('click', () => signOut(auth));
 
             ui.manageMaterialsBtn.addEventListener('click', () => ui.materialsModal.style.display = 'flex');
@@ -653,7 +672,7 @@
                 const density = Number(document.getElementById('new-material-density').value);
                 if (name && thickness > 0 && density > 0) {
                     try {
-                        const newMaterialRef = doc(collection(db, "roll_materials"));
+                        const newMaterialRef = doc(materialsCollectionRef);
                         await setDoc(newMaterialRef, { name, thickness, density });
                         ui.addMaterialForm.reset();
                     } catch (error) { console.error("Ошибка при добавлении материала: ", error); }
@@ -684,7 +703,7 @@
 
                 if (button.classList.contains('delete-material-btn')) {
                     try {
-                        await deleteDoc(doc(db, "roll_materials", id));
+                        await deleteDoc(doc(materialsCollectionRef, id));
                     } catch (error) {
                         console.error("Ошибка удаления: ", error);
                     }
@@ -700,7 +719,7 @@
                         const newThickness = Number(thicknessInput.value);
                         const newDensity = Number(densityInput.value);
                         try {
-                            await setDoc(doc(db, "roll_materials", id), { ...liveMaterials[id], thickness: newThickness, density: newDensity });
+                            await setDoc(doc(materialsCollectionRef, id), { ...liveMaterials[id], thickness: newThickness, density: newDensity }, { merge: true });
                             thicknessInput.setAttribute('readonly', true);
                             densityInput.setAttribute('readonly', true);
                             thicknessInput.classList.add('bg-gray-100', 'dark:bg-zinc-800/50', 'cursor-not-allowed');
@@ -740,12 +759,22 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            materialsCollectionRef = collection(db, 'roll_materials');
+            // ПРИМЕЧАНИЕ: Убедитесь, что ваши правила безопасности Firestore разрешают
+            // доступ к 'roll_materials' для аутентифицированных пользователей.
+            // Пример правила:
+            // rules_version = '2';
+            // service cloud.firestore {
+            //   match /databases/{database}/documents {
+            //     match /roll_materials/{docId} {
+            //       allow read, write: if request.auth != null;
+            //     }
+            //   }
+            // }
+            materialsCollectionRef = collection(db, "roll_materials");
             
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     console.log("Пользователь вошел:", user.email);
-                    console.log("UID пользователя:", user.uid);
                     ui.authScreen.style.display = 'none';
                     ui.appScreen.style.display = 'block';
                     ui.userEmail.textContent = user.email;
@@ -771,3 +800,4 @@
     </script>
 </body>
 </html>
+
